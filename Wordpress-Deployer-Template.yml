@@ -12,6 +12,14 @@ Parameters:
       Description: Email to configure the web server with
       Type: String
       Default: arcadiancloud@gmail.com
+    
+    AutoScalingReplacingUpdate:
+      Description: Whether or not to replace the Wordpress server on ASG update. WARNING! Leave this false unless you want your wordpress server possibly terminated. 
+      Type: String
+      AllowedValues:
+        - true
+        - false
+      Default: false
 
     Subnets:
       Description: Possible subnets the wordpress server can be deployed in. Pick a minumum of 2
@@ -51,21 +59,24 @@ Parameters:
 
 Resources:
   AutoSaclingGroup:
-      Type: "AWS::AutoScaling::AutoScalingGroup"
-      Properties:
-          DesiredCapacity: !Ref ASGMinInstances
-          HealthCheckGracePeriod: 30
-          LaunchConfigurationName: !Ref LaunchConfiguration
-          MaxSize: !Ref ASGMaxInstances
-          MinSize: !Ref ASGMinInstances
-          Tags:
-              - Key: Name
-                Value: WordpressBlog
-                PropagateAtLaunch: true
-              - Key: Project
-                Value: Blog
-                PropagateAtLaunch: true
-          VPCZoneIdentifier: !Ref Subnets
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      DesiredCapacity: !Ref ASGMinInstances
+      HealthCheckGracePeriod: 30
+      LaunchConfigurationName: !Ref LaunchConfiguration
+      MaxSize: !Ref ASGMaxInstances
+      MinSize: !Ref ASGMinInstances
+      Tags:
+          - Key: Name
+            Value: WordpressBlog
+            PropagateAtLaunch: true
+          - Key: Project
+            Value: Blog
+            PropagateAtLaunch: true
+      VPCZoneIdentifier: !Ref Subnets
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: !Ref AutoScalingReplacingUpdate
 
   LaunchConfiguration: 
     Type: AWS::AutoScaling::LaunchConfiguration
@@ -86,8 +97,10 @@ Resources:
         Fn::Base64: !Sub |
           #!bin/bash
           sudo mkdir /testdir
+          sudo touch /tmp/test
+          echo serverAdminEmail: ${serverAdminEmail}  serverName: ${serverName} > /tmp/test
   
 Outputs:
-    AutoSaclingGroup:
-      Description: Autoscaling group containing the wordpress server/s
-      Value: !Ref AutoSaclingGroup
+  AutoSaclingGroup:
+    Description: Autoscaling group containing the wordpress server/s
+    Value: !Ref AutoSaclingGroup

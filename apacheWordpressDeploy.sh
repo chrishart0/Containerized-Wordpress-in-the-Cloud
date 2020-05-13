@@ -139,8 +139,9 @@ saltsEscapedForSed=${salts//$'\n'/\\$'\n'}
 sed -i "/NONCE_SALT/a $saltsEscapedForSed" wordpress/wp-config.php
 sed -i '/put your unique phrase here/d' wordpress/wp-config.php
 
-#Update the apache config to allow Wordpress permalinks
+#Update the apache config to allow Wordpress permalinks and configure admin email
 sudo sed -ie '\%^<Directory "/var/www/html">%,\%^</Directory>% s/AllowOverride None/AllowOverride All/' /etc/httpd/conf/httpd.conf
+sudo sed -i "s|ServerAdmin root@localhost|ServerAdmin $serverAdminEmail|" /etc/httpd/conf/httpd.conf
 
 #Deploy wordpress to the web server
 echo "Depoloying wordpress"

@@ -36,7 +36,7 @@ Parameters:
       Default: 1
 
     VolumeSize: 
-      Description: Min number of wordpress EC2 instances
+      Description: Size of root volue for EC2 instance
       Type: Number
       Default: 10
 
@@ -55,7 +55,7 @@ Parameters:
     AMI: 
       Description: Instance type to use for wordpress servers
       Type: AWS::EC2::Image::Id
-      Default: ami-0323c3dd2da7fb37d
+      Default: ami-0c94855ba95c71c99
 
 Resources:
   AutoSaclingGroup:
@@ -68,7 +68,7 @@ Resources:
       MinSize: !Ref ASGMinInstances
       Tags:
           - Key: Name
-            Value: WordpressBlog
+            Value: !Ref serverName
             PropagateAtLaunch: true
           - Key: Project
             Value: Blog

@@ -20,7 +20,7 @@ sudo yum install certbot -y
 
 #Configure certbot
 echo "rsa-key-size = 4096" | sudo tee -a /etc/letsencrypt/config.ini > /dev/null
-echo "email = $serverAdminEmail | sudo tee /etc/letsencrypt/config.ini > /dev/null
+echo "email = $serverAdminEmail" | sudo tee /etc/letsencrypt/config.ini > /dev/null
 
 sudo certbot certonly --webroot -w /var/www/html -d $serverName --config /etc/letsencrypt/config.ini --agree-tos --non-interactive
 
@@ -28,9 +28,13 @@ sudo certbot certonly --webroot -w /var/www/html -d $serverName --config /etc/le
 echo "0 0,12 * * * root python3 -c 'import random; import time; time.sleep(random.random() * 3600)' && sudo certbot renew -q" | sudo tee -a /etc/crontab > /dev/null
 
 #Configure SSL keys locations
-sudo sed -i "s|SSLCertificateFile /etc/pki/tls/certs/localhost.crt|SSLCertificateFile '/etc/letsencrypt/live/arcadian.cloud/fullchain.pem'|" /etc/httpd/conf.d/ssl.conf
-sudo sed -i "s|SSLCertificateKeyFile /etc/pki/tls/private/localhost.key|SSLCertificateKeyFile '/etc/letsencrypt/live/arcadian.cloud/privkey.pem'|" /etc/httpd/conf.d/ssl.conf
-sudo sed -i "s|#SSLCertificateChainFile /etc/pki/tls/certs/server-chain.crt|SSLCertificateChainFile '/etc/letsencrypt/live/arcadian.cloud/chain.pem'|" /etc/httpd/conf.d/ssl.conf
+fullchainLocation=$(echo /etc/letsencrypt/live/$serverName/fullchain.pem | awk '{print "'\''" $0 "'\''"}')
+privkeyLocation=$(echo /etc/letsencrypt/live/$serverName/privkey.pem | awk '{print "'\''" $0 "'\''"}')
+chainLocation=$(echo /etc/letsencrypt/live/$serverName/chain.pem | awk '{print "'\''" $0 "'\''"}')
+
+sudo sed -i "s|SSLCertificateFile /etc/pki/tls/certs/localhost.crt|SSLCertificateFile $fullchainLocation|" /etc/httpd/conf.d/ssl.conf
+sudo sed -i "s|SSLCertificateKeyFile /etc/pki/tls/private/localhost.key|SSLCertificateKeyFile $privkeyLocation|" /etc/httpd/conf.d/ssl.conf
+sudo sed -i "s|#SSLCertificateChainFile /etc/pki/tls/certs/server-chain.crt|SSLCertificateChainFile $chainLocation|" /etc/httpd/conf.d/ssl.conf
 
 #General Setup
 sudo sed -i "s|#ServerName www.example.com:443|ServerName $serverName:443|" /etc/httpd/conf.d/ssl.conf

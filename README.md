@@ -1,8 +1,15 @@
-# AWS-Automated-Wordpress-Blog
-Automate the deployment and management of a cheap Wordpress server on AWS EC2.
+# Containerized-Wordpress-in-the-Cloud
+Automate the deployment and management of cheap, high availability, containerized wordpress in the cloud. 
 
-#ToDo
-- SSL Deployment automation
-- CloudWatch deploy script
-- CF Template for Infra
-- Automated Backups
+## Containers
+* Run Alpine Linux for it's exceedingly small footprint and lack of bloat
+* Run nginx
+* Mount networked file system for shared web server directory contianer wordpress files
+* Sit behind loadbalancer directing traffic
+
+## DB
+* MariaDB managed DB instance
+* Optional read replica, left off by default to save costs
+
+## Infrastrucutre as Code
+* All infra deployments are automated with IaC tools for your convienicne 

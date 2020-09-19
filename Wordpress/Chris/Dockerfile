@@ -18,11 +18,7 @@ RUN apk update \
 
 #WORKDIR "/www"
 #RUN make /app
-COPY entrypoint.sh /entrypoint.sh
-
-COPY index.html /usr/share/nginx/html/index.html
-
-CMD ["/entrypoint.sh"]
+COPY docker-entrypoint.d/ /docker-entrypoint.d/
 
 HEALTHCHECK --interval=30s --timeout=3s \
   CMD curl -f http://localhost/ || exit 1

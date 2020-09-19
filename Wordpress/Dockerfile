@@ -1,4 +1,13 @@
 FROM nginx:mainline-alpine
-# COPY . /app
-# RUN make /app
-# CMD python /app/app.py
+LABEL Author="ChristianHart,"
+
+#RUN apk add --update openjdk8-jre-base screen
+
+#WORKDIR "/www"
+#CMD echo "hello world"
+#RUN make /app
+#COPY entrypoint.sh /entrypoint.sh
+
+#CMD ["/entrypoint.sh"]
+
+#EXPOSE 443

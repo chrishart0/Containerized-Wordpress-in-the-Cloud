@@ -9,7 +9,7 @@
 FROM nginx:mainline-alpine
 LABEL Author="ChristianHart,DanielS1996"
 
-#RUN apk add --update openjdk8-jre-base screen
+RUN apk add php7 php7-fpm php7-opcache
 
 #WORKDIR "/www"
 #RUN make /app

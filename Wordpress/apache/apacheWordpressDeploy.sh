@@ -179,7 +179,7 @@ cp wordpress/wp-config-sample.php wordpress/wp-config.php
 sed -i "s/database_name_here/$wordpressDB/" wordpress/wp-config.php
 sed -i "s/username_here/$wordpressUser/" wordpress/wp-config.php
 sed -i "s/password_here/$wordpressDbUserPass/" wordpress/wp-config.php
-if [ "$useRDS" = true ];then sed -i "s/localhost/$RDSEndpoint/" wordpress/wp-config.php fi
+if [ "$useRDS" = true ];then sed -i "s/localhost/$RDSEndpoint/" wordpress/wp-config.php; fi
 #ToDo set host
 
 #Get salt values from wordpress and insert them into wp-config.php

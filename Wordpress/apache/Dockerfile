@@ -1,38 +1,16 @@
+# PHP Images can be found at https://hub.docker.com/_/php/
+FROM php:7.3-alpine3.12
 
-# ┏━━━┓╋╋╋╋╋┏┓╋╋╋╋╋╋┏━━━┓┏┓
-# ┗┓┏┓┃╋╋╋╋╋┃┃╋╋╋╋╋╋┃┏━━┛┃┃
-# ╋┃┃┃┣━━┳━━┫┃┏┳━━┳━┫┗━━┳┫┃┏━━┓
-# ╋┃┃┃┃┏┓┃┏━┫┗┛┫┃━┫┏┫┏━━╋┫┃┃┃━┫
-# ┏┛┗┛┃┗┛┃┗━┫┏┓┫┃━┫┃┃┃╋╋┃┃┗┫┃━┫
-# ┗━━━┻━━┻━━┻┛┗┻━━┻┛┗┛╋╋┗┻━┻━━┛
+# The application will be copied in /home/application and the original document root will be replaced in the apache configuration 
+#COPY app /home/application/ 
 
-FROM httpd:2.4
-LABEL Author="ChristianHart"
+# Concatenated RUN commands
+RUN apk add --update apache2 php7-apache2 php7-mbstring php7-session php7-json php7-pdo php7-openssl php7-tokenizer php7-pdo php7-pdo_mysql php7-xml php7-simplexml\
+    && sed -i '/LoadModule rewrite_module/s/^#//g' /etc/apache2/httpd.conf \
+    && sed -i '/LoadModule session_module/s/^#//g' /etc/apache2/httpd.conf \
+    && sed -i 's/AllowOverride\ None/AllowOverride\ All/g' /etc/apache2/httpd.conf \
+    && docker-php-ext-install pdo_mysql \
+    && rm  -rf /tmp/* /var/cache/apk/*
 
-COPY containerDebianApacheWordpressDeploy.sh /usr/bin
-COPY docker-entrypoint.sh /usr/bin
-
-RUN chmod +x /usr/bin/containerDebianApacheWordpressDeploy.sh \
-    && chmod +x /usr/bin/docker-entrypoint.sh
-
-
-RUN apt-get update && apt-get upgrade \
-    && apt-get -y install curl default-mysql-client fontconfig-config fonts-dejavu-core libaio1 \
-        libao-common libao4 libapache2-mod-php libapache2-mod-php7.3 libflac8 libfontconfig1 libfreetype6  \
-        libgd3 libgdbm-compat4 libgpm2 libjbig0 libjpeg62-turbo libjs-cropper libjs-prototype libjs-scriptaculous \
-        libmagic-mgc libmagic1 libmariadb3 libncurses6 libogg0 libpcre2-8-0 libperl5.28 libpng16-16 libprocps7 \
-        libreadline5 libsnappy1v5 libsodium23 libspeex1 libsqlite3-0 libterm-readkey-perl libtiff5 libvorbis0a \
-        libvorbisenc2 libvorbisfile3 libwebp6 libx11-6 libx11-data libxau6 libxcb1 libxdmcp6 libxpm4 netbase \
-        openssl php-common php-gd php-getid3 php-mysql php7.3-common php7.3-gd php7.3-json php7.3-mysql \
-        php7.3-opcache php7.3-readline procps psmisc readline-common \
-        wget
-
-
-WORKDIR /usr/local/apache2
-
-#HEALTHCHECK --interval=3m --timeout=3s \
-#  CMD curl -f http://localhost/index.php || exit 1
-
-CMD ["/usr/bin/docker-entrypoint.sh"]
-
-EXPOSE 80 443
+# Launch the httpd in foreground
+CMD rm -rf /run/apache2/* || true && /usr/sbin/httpd -DFOREGROUND

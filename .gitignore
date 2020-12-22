@@ -2,3 +2,4 @@
 sshBlog*
 BuildScript.sh
 Wordpress/apache/app/*
+LocalBuilds.sh

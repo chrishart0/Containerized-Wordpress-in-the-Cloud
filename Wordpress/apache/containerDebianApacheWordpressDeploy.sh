@@ -44,7 +44,7 @@ sed -i '/put your unique phrase here/d' wordpress/wp-config.php
 #Update the apache config to allow Wordpress permalinks and configure admin email
 sed -ie '\%^<Directory "/usr/local/apache2/htdocs">%,\%^</Directory>% s/AllowOverride None/AllowOverride All/' $apacheConfigFilePath
 sed -i "s|ServerAdmin root@localhost|ServerAdmin $serverAdminEmail|" $apacheConfigFilePath
-sed -i -e '$aLoadModule php7_module modules/mod_php.so' $apacheConfigFilePath
+#sed -i -e '$aLoadModule php7_module modules/mod_php.so' $apacheConfigFilePath
 
 #Deploy wordpress to the web server
 echo "Depoloying wordpress"
@@ -53,8 +53,8 @@ rm -r wordpress
 
 #Set file permissions
 echo "Setting file permissions"
-# chown -R root $apacheWebDirRootPath
-# chgrp -R root $apacheWebDirRootPath
+chown -R root $apacheWebDirRootPath
+chgrp -R root $apacheWebDirRootPath
 chmod 2775 $apacheWebDirRootPath
 find $apacheWebDirRootPath-type d -exec chmod 2775 {} \;
 find $apacheWebDirRootPath -type f -exec chmod 0664 {} \;

@@ -14,8 +14,8 @@
 #Parameters#
 ############
 useRDS=true
-serverName="arcadian.cloud"
-serverAdminEmail="arcadiancloud@gmail.com"
+serverName="myssite.com" #make into environment var
+serverAdminEmail="myemail@gmail.com" #make into environment var
 #Each CMK costs $1/month. Use the AWS Default key and don't be lazy with your IAM perms, make them specific to the Parameterstore key
 parameterStoreKeyId="alias/aws/ssm"
 AWStags="Key=SiteName,Value=$serverName Key=Project,Value=Blog"

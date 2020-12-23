@@ -1,2 +1,7 @@
 /testing/
 sshBlog*
+BuildScript.sh
+LocalBuilds.sh
+Wordpress/test/
+Wordpress/apache/dbdump.bak
+Wordpress/apache/app/

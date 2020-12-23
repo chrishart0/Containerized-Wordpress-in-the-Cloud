@@ -1,5 +1,5 @@
 FROM nginx:mainline-alpine
-LABEL Author="ChristianHart"
+LABEL Author="ChristianHart,DanielS1996"
 
 ENV WORDPRESS_VERSION 5.5.1
 ENV WORDPRESS_SHA1 d3316a4ffff2a12cf92fde8bfdd1ff8691e41931

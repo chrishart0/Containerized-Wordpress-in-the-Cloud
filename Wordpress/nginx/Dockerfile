@@ -16,6 +16,6 @@ COPY docker-entrypoint.d/ /docker-entrypoint.d/
 #HEALTHCHECK --interval=3m --timeout=3s \
 #  CMD curl -f http://localhost/index.php || exit 1
 CMD [ "/bin/sh" ]
-#CMD ["nginx", "-g", "daemon off;"]
+#CMD ["nginx", "-g", "daemon off;"] 
 
 EXPOSE 80

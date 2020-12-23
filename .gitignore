@@ -1,8 +1,7 @@
 /testing/
 sshBlog*
-<<<<<<< HEAD
 BuildScript.sh
-Wordpress/apache/app/*
 LocalBuilds.sh
-=======
->>>>>>> parent of 6691261... Start on debian apache container
+Wordpress/test/
+Wordpress/apache/dbdump.bak
+Wordpress/apache/app/

@@ -1,8 +1,25 @@
 #PHP Images can be found at https://hub.docker.com/_/php/
 FROM php:7.3-alpine3.12
+ENV WP_VERSION=latest
 
-#Copy WP files to file system
-COPY app/ /var/www/localhost/htdocs/
+#Download and unzip newest version of wordpress
+WORKDIR /var/www/localhost/htdocs
+RUN echo "Download and unzip newest version of wordpress" \
+    && wget https://wordpress.org/$WP_VERSION.tar.gz \
+    && tar -xzf latest.tar.gz \
+    && rm latest.tar.gz \
+    && cp wordpress/wp-config-sample.php wordpress/wp-config.php \
+#Get salt values from wordpress and insert them into wp-config.php
+    && echo "Configure salts" \
+    && salts=$(curl https://api.wordpress.org/secret-key/1.1/salt/) \
+    && saltsEscapedForSed=${salts//$'\n'/\\$'\n'} \
+    && sed -i "/NONCE_SALT/a $saltsEscapedForSed" wordpress/wp-config.php \
+    && sed -i '/put your unique phrase here/d' wordpress/wp-config.php \
+#Move Wordpress to root of web dir
+    && mv wordpress/* ./ \
+    && rm -r wordpress
+
+#Copy entrypoint script to file system
 COPY docker-entrypoint.sh /usr/bin/docker-entrypoint.sh
 
 #Concatenated RUN commands

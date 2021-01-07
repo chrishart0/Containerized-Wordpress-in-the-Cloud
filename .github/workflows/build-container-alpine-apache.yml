@@ -27,7 +27,31 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
-      # Runs a single command using the runners shell
+      - name: Set environment Variables
+        shell: bash
+        run: |
+          echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//_/g')" | tee $GITHUB_ENV
+          echo "CONTAINER_NAME='alpine-apache-wordpress'" | tee $GITHUB_ENV
+
+      #https://github.com/aws-actions/configure-aws-credentials
+      - name: Configure AWS credentials for use by other steps
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
       - name: Build Container
         working-directory: Wordpress/apache
-        run: docker build . --file Dockerfile
+        run: docker build -t $CONTAINER_NAME .
+
+      - name: Docker tag
+        run:  docker tag $CONTAINER_NAME:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/$$CONTAINER_NAME:$BRANCH
+
+      - name: Push to ECR
+        run:  docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/$CONTAINER_NAME:$BRANCH
+        

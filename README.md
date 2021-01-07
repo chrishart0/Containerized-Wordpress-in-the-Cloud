@@ -10,7 +10,10 @@ Automate the deployment and management of cheap, high availability, containerize
 * Mount networked file system(EFS) for sharing wp-content allowing for ease of use and quick load times
 * Sit behind ELB directing traffic and allowing for auto scaling
 * HTTPS offload at loadbalancer for lower resource consumption
-* CloudFront caching of uploaded files for quicker load times and less resource consumption
+* Pick Apache or Nginx for web server
+* Pick Wordpress version in deployment methodology
 
 ## Infrastrucutre as Code
 * All infra deployments are automated with IaC tools for your convenience 
+* CloudFront caching of uploaded files for quicker load times and less resource consumption
+* Automated testing upon new container builds or infra changes

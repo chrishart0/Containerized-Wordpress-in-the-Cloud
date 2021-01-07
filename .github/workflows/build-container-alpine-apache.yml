@@ -21,17 +21,18 @@ jobs:
   build:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+    env:
+      CONTAINER_NAME: 'alpine-apache-wordpress'
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
-      - name: Set environment Variables
+      - name: Set BRANCH Variable
         shell: bash
         run: |
           echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//_/g')" | tee $GITHUB_ENV
-          echo "CONTAINER_NAME='alpine-apache-wordpress'" | tee $GITHUB_ENV
 
       #https://github.com/aws-actions/configure-aws-credentials
       - name: Configure AWS credentials for use by other steps
@@ -47,11 +48,11 @@ jobs:
 
       - name: Build Container
         working-directory: Wordpress/apache
-        run: docker build -t ${process.env.CONTAINER_NAME} .
+        run: docker build -t $CONTAINER_NAME .
 
       - name: Docker tag
-        run:  docker tag ${process.env.CONTAINER_NAME}:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/$${process.env.CONTAINER_NAME}:${process.env.BRANCH}
+        run:  docker tag $CONTAINER_NAME:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/$$CONTAINER_NAME:${process.env.BRANCH}
 
       - name: Push to ECR
-        run:  docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${process.env.CONTAINER_NAME}:${process.env.BRANCH}
+        run:  docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/$CONTAINER_NAME:${process.env.BRANCH}
         

@@ -29,10 +29,10 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
-      - name: Set BRANCH Variable
+      - name: Extract branch name
         shell: bash
-        run: |
-          echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//_/g')" | tee $GITHUB_ENV
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
 
       #https://github.com/aws-actions/configure-aws-credentials
       - name: Configure AWS credentials for use by other steps
@@ -51,8 +51,8 @@ jobs:
         run: docker build -t $CONTAINER_NAME .
 
       - name: Docker tag
-        run:  docker tag $CONTAINER_NAME:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/$CONTAINER_NAME:$BRANCH
+        run:  docker tag $CONTAINER_NAME:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/$CONTAINER_NAME:${{ steps.extract_branch.outputs.branch }}
 
       - name: Push to ECR
-        run:  docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/$CONTAINER_NAME:$BRANCH
+        run:  docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/$CONTAINER_NAME:${{ steps.extract_branch.outputs.branch }}
         

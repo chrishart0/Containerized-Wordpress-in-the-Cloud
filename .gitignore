@@ -5,3 +5,4 @@ LocalBuilds.sh
 Wordpress/test/
 Wordpress/apache/dbdump.bak
 Wordpress/apache/app/
+*.zip

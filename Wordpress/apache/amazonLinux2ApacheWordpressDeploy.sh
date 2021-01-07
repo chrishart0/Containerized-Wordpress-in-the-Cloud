@@ -172,6 +172,7 @@ echo "Download and unzip newest version of wordpress"
 wget https://wordpress.org/latest.tar.gz
 tar -xzf latest.tar.gz
 rm latest.tar.gz
+cp wordpress/wp-config-sample.php wordpress/wp-config.php
 
 #Configure DB info
 echo "Configuring wp-config.php"

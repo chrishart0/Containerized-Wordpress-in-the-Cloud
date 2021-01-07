@@ -51,7 +51,7 @@ jobs:
         run: docker build -t $CONTAINER_NAME .
 
       - name: Docker tag
-        run:  docker tag $CONTAINER_NAME:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/$$CONTAINER_NAME:${process.env.BRANCH}
+        run:  docker tag $CONTAINER_NAME:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/$CONTAINER_NAME:${process.env.BRANCH}
 
       - name: Push to ECR
         run:  docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/$CONTAINER_NAME:${process.env.BRANCH}

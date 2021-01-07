@@ -17,3 +17,4 @@ Automate the deployment and management of cheap, high availability, containerize
 * All infra deployments are automated with IaC tools for your convenience 
 * CloudFront caching of uploaded files for quicker load times and less resource consumption
 * Automated testing upon new container builds or infra changes
+* Optional Aurora or MySql for cost savings vs HA

@@ -3,7 +3,7 @@ Automate the deployment and management of cheap, high availability, containerize
 
 ![Build-Container-Alpine-Apache](https://github.com/ChristianHart/Containerized-Wordpress-in-the-Cloud/workflows/Build-Container-Alpine-Apache/badge.svg)
 
-![awsInfraDiagram](AWS Deployment Automation/awsInfra.png)
+![awsInfraDiagram](AWS-Deployment-Automation/awsInfra.png)
 
 ## Containers
 * Run Alpine Linux for it's exceedingly small footprint and lack of bloat

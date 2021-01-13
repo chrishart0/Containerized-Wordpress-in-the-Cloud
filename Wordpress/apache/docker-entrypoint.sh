@@ -10,7 +10,18 @@ chown -R apache:apache /var/www/localhost/htdocs/wp-content/
 ls -l /var/www/localhost/htdocs/wp-content/
 
 #Call healthcheck - TODO make healthcheck page
-#(sleep 5; curl -f http://localhost/health.php) &
+#
+
+#OPTIONAL: Enable troubleshooting mode
+if ${TROUBLESHOOTING_MODE_ENABLED:-false}; then
+    echo "WARNING! DO NOT LEAVE TROUBLESHOOTING MODE ENABLED IN PRODUCTION"
+    echo "Completing troubleshooting mode setup: setting WP_DEBUG to true and making a health.html file."
+    sed -i -E "s/define\( 'WP_DEBUG', (.*) \)/define( 'WP_DEBUG', true )/" $webRoot/wp-config.php
+    echo "Can reach a pure html page, apache healthy!" > '/var/www/localhost/htdocs/health.html'
+    echo "<?php phpinfo(); ?>" > '/var/www/localhost/htdocs/health.php'
+    (sleep 5; curl -f http://localhost/health.html) &
+    (sleep 5; curl -f http://localhost/health.php) &
+fi
 
 #Configure DB info in wp-config
 echo "Configuring wp-config.php"

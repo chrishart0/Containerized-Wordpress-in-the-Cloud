@@ -1,5 +1,6 @@
 /testing/
 sshBlog*
+*.out
 BuildScript.sh
 LocalBuilds.sh
 Wordpress/test/

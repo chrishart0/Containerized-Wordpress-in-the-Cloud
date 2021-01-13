@@ -15,7 +15,7 @@ ls -l /var/www/localhost/htdocs/wp-content/
 #OPTIONAL: Enable troubleshooting mode
 if ${TROUBLESHOOTING_MODE_ENABLED:-false}; then
     echo "WARNING! DO NOT LEAVE TROUBLESHOOTING MODE ENABLED IN PRODUCTION"
-    echo "Completing troubleshooting mode setup: setting WP_DEBUG to true and making a health.html file."
+    echo "Completing troubleshooting mode setup: setting WP_DEBUG to true, making a health.html file, making a health.php file."
     sed -i -E "s/define\( 'WP_DEBUG', (.*) \)/define( 'WP_DEBUG', true )/" $webRoot/wp-config.php
     echo "Can reach a pure html page, apache healthy!" > '/var/www/localhost/htdocs/health.html'
     echo "<?php phpinfo(); ?>" > '/var/www/localhost/htdocs/health.php'

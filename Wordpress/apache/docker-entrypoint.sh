@@ -30,14 +30,14 @@ sed -i "s/localhost/$DBHOST/" $webRoot/wp-config.php
 sed -i "s/username_here/$DBUSER/" $webRoot/wp-config.php
 sed -i "s/password_here/$DBUSERPASS/" $webRoot/wp-config.php
 
-#Configure HTTPS
+#Setup WP-Config to handle HTTPS offloading at the ELB
 sed -i "/DB_COLLATE/a \
 \/** SSL Settings *\/ \n\
 define('FORCE_SSL_ADMIN', true);\n\
 \n\
-\/* Turn HTTPS 'on' if HTTP_X_FORWARDED_PROTO matches 'https' *\/ \n\
-if (strpos($_SERVER['HTTP_X_FORWARDED_PROTO'], 'https') !== false)  \n\                                                                                                                        
-       $_SERVER['HTTPS']='on'; " $webRoot/wp-config.php
+\/** Turn HTTPS 'on' if HTTP_X_FORWARDED_PROTO matches 'https' *\/ \n\
+if (strpos($_SERVER['HTTP_X_FORWARDED_PROTO'], 'https') !== false)  \n\
+    $_SERVER['HTTPS']='on'; " wp-config.php
 
 #Launch apache
 rm -rf /run/apache2/* || true && /usr/sbin/httpd -DFOREGROUND

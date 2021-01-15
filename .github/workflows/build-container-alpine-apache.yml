@@ -7,10 +7,13 @@ on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
     branches:
-      - '*'
+      - 'master'
+      - 'feature/*'
+      - 'bugfix/*'
   pull_request:
     branches:
-      - '*'
+      - 'feature/*'
+      - 'bugfix/*'
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -31,7 +34,7 @@ jobs:
 
       - name: Extract branch name
         shell: bash
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        run: echo "##[set-output name=branch;]$(sed 's/[^a-zA-Z0-9]/-/g' <<<${GITHUB_REF#refs/heads/})"
         id: extract_branch
 
       #https://github.com/aws-actions/configure-aws-credentials

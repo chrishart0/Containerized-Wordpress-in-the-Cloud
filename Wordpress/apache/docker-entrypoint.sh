@@ -24,13 +24,6 @@ if ${TROUBLESHOOTING_MODE_ENABLED:-false}; then
     echo "<?php phpinfo(); ?>" > '/var/www/localhost/htdocs/health.php'
     (sleep 5; curl -f http://localhost/health.html) &
     (sleep 5; curl -f http://localhost/health.php) &
-    echo "WP-Config shows DB_HOST line as: " $(grep DB_HOST $webRoot/wp-config.php)
-    echo "WP-Config shows DB_USER line as: " $(grep DB_USER $webRoot/wp-config.php)
-    echo "WP-Config shows DB_NAME line as: " $(grep DB_NAME $webRoot/wp-config.php)
-    echo "WP-Config shows DB_PASSWORD line as: " $(grep DB_PASSWORD $webRoot/wp-config.php)
-
-    apk add netcat-openbsd
-
 fi
 
 #Setup WP-Config to handle HTTPS offloading at the ELB

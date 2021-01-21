@@ -9,10 +9,11 @@ from aws_cdk import (
     aws_secretsmanager as secretsmanager,
     aws_iam as iam,
     aws_route53 as route53,
-    aws_elasticloadbalancingv2 as elasticloadbalancingv2
+    aws_elasticloadbalancingv2 as elasticloadbalancingv2,
+    aws_efs as efs
 )
 
-
+#https://gist.github.com/phillippbertram/080af4c27b6c826568e03fb7d5b8f6f0
 
 class WordpressEcsConstructStack(core.Stack):
 
@@ -23,18 +24,22 @@ class WordpressEcsConstructStack(core.Stack):
         vpc = ec2.Vpc(self, "VPC", 
             max_azs=3,
             cidr=cpvCIDR
-
         )    
-        
-        # default is all AZs in region
-        # vpc=ec2.Vpc.from_lookup( self, "VPC",
-        #     vpc_id=VpcID
-        # )
+
+        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_efs/FileSystem.html
+        FileSystem = efs.FileSystem(self, "MyEfsFileSystem",
+            vpc=vpc,
+            encrypted=True, # file system is not encrypted by default
+            lifecycle_policy = efs_lifecycle_policy,
+            performance_mode = efs.PerformanceMode.GENERAL_PURPOSE,
+            removal_policy = core.RemovalPolicy(efs_removal_policy),
+            enable_automatic_backups = efs_automatic_backups,
+        )
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Cluster.html?highlight=ecs%20cluster#aws_cdk.aws_ecs.Cluster
         cluster = ecs.Cluster(self, "Cluster", 
-            vpc=vpc, 
-            container_insights=enable_container_insights
+            vpc = vpc, 
+            container_insights = enable_container_insights
         )
 
         #Get needed secrets
@@ -46,7 +51,16 @@ class WordpressEcsConstructStack(core.Stack):
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_secretsmanager/Secret.html#aws_cdk.aws_secretsmanager.Secret.from_secret_name_v2
         SecretsManagerTest = secretsmanager.Secret.from_secret_name_v2( self, "SecretsManagerTest",
-            secret_name=DBCredSecretsKey
+            secret_name = DBCredSecretsKey
+        )
+
+        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateTaskDefinition.html
+        WordpressEfsVolume = ecs.Volume (
+                name = "efs",
+                efs_volume_configuration = ecs.EfsVolumeConfiguration(
+                    file_system_id = FileSystem.file_system_id,
+                    root_directory = "-".join([Environment, SubProductName])
+                )
         )
 
         #Create Task Definition
@@ -54,6 +68,7 @@ class WordpressEcsConstructStack(core.Stack):
         WordpressTask = ecs.FargateTaskDefinition(self, "TaskDefinition",
             cpu = cpuSize,
             memory_limit_mib = memorySize,
+            volumes=[WordpressEfsVolume]
         )
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateTaskDefinition.html#aws_cdk.aws_ecs.FargateTaskDefinition.add_container
@@ -65,11 +80,11 @@ class WordpressEcsConstructStack(core.Stack):
                 tag=ContainerTag
             ),
             logging=ecs.LogDriver.aws_logs(
-                stream_prefix="container",
-                #log_group="{Environment}/{ProductName}/{SubProductName}", #ToDo make sure I like log group name
-                log_retention=logs.RetentionDays(ContainerLogRetentionPeriod)
+                stream_prefix = "container",
+                #log_group = "{Environment}/{ProductName}/{SubProductName}", #ToDo make sure I like log group name
+                log_retention = logs.RetentionDays(ContainerLogRetentionPeriod)
             ),
-            environment={"TEST": "1", "TEST2": "2", "TROUBLESHOOTING_MODE_ENABLED": TROUBLESHOOTING_MODE_ENABLED},
+            environment = {"TROUBLESHOOTING_MODE_ENABLED": TROUBLESHOOTING_MODE_ENABLED},
             secrets = {
                 # "PARAMETERSTORETEST": ecs.Secret.from_ssm_parameter( ParameterStoreTest ),
                 "DBHOST": ecs.Secret.from_secrets_manager( SecretsManagerTest, "host" ),
@@ -77,12 +92,21 @@ class WordpressEcsConstructStack(core.Stack):
                 "DBUSERPASS": ecs.Secret.from_secrets_manager( SecretsManagerTest, "password" ),
                 "DBNAME": ecs.Secret.from_secrets_manager( SecretsManagerTest, "database_name" )
             },
-            #command = ["sh", "-c" ,"cat /var/www/localhost/htdocs/wp-config.php"]#ToDo: Remove this, just a test to verify secrets are getting pulled in right
         )
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/ContainerDefinition.html?highlight=add_port_mappings#aws_cdk.aws_ecs.ContainerDefinition.add_port_mappings
         WordpressContainer.add_port_mappings(
             ecs.PortMapping( container_port=80, protocol=ecs.Protocol.TCP)
+        )
+
+        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/ContainerDefinition.html?highlight=add_port_mappings#aws_cdk.aws_ecs.ContainerDefinition.add_port_mappings
+        #https://gist.github.com/phillippbertram/ee312b09c3982d76b9799653ed6d6201
+        WordpressContainer.add_mount_points(
+            ecs.MountPoint(
+                container_path = "/var/www/localhost/htdocs/wp-content/",
+                read_only = False,
+                source_volume = WordpressEfsVolume.name
+            )
         )
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs_patterns/ApplicationLoadBalancedFargateService.html
@@ -101,6 +125,10 @@ class WordpressEcsConstructStack(core.Stack):
             platform_version = ecs.FargatePlatformVersion("VERSION1_4"), #Required for EFS
         )  
 
+        #https://gist.github.com/phillippbertram/ee312b09c3982d76b9799653ed6d6201
+        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ec2/Connections.html#aws_cdk.aws_ec2.Connections
+        EcsService.service.connections.allow_to(FileSystem, ec2.Port.tcp(2049))   #Open hole to ECS in EFS SG
+
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateService.html#aws_cdk.aws_ecs.FargateService.auto_scale_task_count
         ECSAutoScaler = EcsService.service.auto_scale_task_count(max_capacity=containerMaxCount, min_capacity=containerMinCount)
 
@@ -115,11 +143,3 @@ class WordpressEcsConstructStack(core.Stack):
             scale_out_cooldown = core.Duration.seconds(30),
             scale_in_cooldown = core.Duration.seconds(60)
         )
-        # ECSAutoScaler.scale_to_track_custom_metric( "maxMemScale", 
-        #     metric = EcsService.metric(
-        #         metric_name = MemoryUtilized
-        #     ) ,
-        #     target_value = 90,
-        #     scale_out_cooldown = core.Duration.seconds(30),
-        #     scale_in_cooldown = core.Duration.seconds(60)
-        # )

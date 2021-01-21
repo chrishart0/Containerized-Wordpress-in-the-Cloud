@@ -7,3 +7,5 @@ Wordpress/test/
 Wordpress/apache/dbdump.bak
 Wordpress/apache/app/
 *.zip
+AWS-Deployment-Automation/WordpressEcsConstruct/wordpress_construct/__init__.py
+AWS-Deployment-Automation/WordpressEcsConstruct/params.txt

@@ -13,22 +13,14 @@ from aws_cdk import (
     aws_efs as efs
 )
 
-#https://gist.github.com/phillippbertram/080af4c27b6c826568e03fb7d5b8f6f0
-
 class WordpressEcsConstructStack(core.Stack):
 
-    def __init__(self, scope: core.Construct, construct_id: str, **kwargs) -> None:
-        super().__init__(scope, construct_id, **kwargs)
-
-        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ec2/Vpc.html
-        vpc = ec2.Vpc(self, "VPC", 
-            max_azs=3,
-            cidr=cpvCIDR
-        )    
+    def __init__(self, scope: core.Construct, construct_id: str, props, **kwargs) -> None:
+        super().__init__(scope, construct_id, **kwargs) 
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_efs/FileSystem.html
         FileSystem = efs.FileSystem(self, "MyEfsFileSystem",
-            vpc=vpc,
+            vpc=props['vpc'],
             encrypted=True, # file system is not encrypted by default
             lifecycle_policy = efs_lifecycle_policy,
             performance_mode = efs.PerformanceMode.GENERAL_PURPOSE,
@@ -38,7 +30,7 @@ class WordpressEcsConstructStack(core.Stack):
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Cluster.html?highlight=ecs%20cluster#aws_cdk.aws_ecs.Cluster
         cluster = ecs.Cluster(self, "Cluster", 
-            vpc = vpc, 
+            vpc = props['vpc'], 
             container_insights = enable_container_insights
         )
 

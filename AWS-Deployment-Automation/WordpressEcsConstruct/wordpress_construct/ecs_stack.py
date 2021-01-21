@@ -12,28 +12,14 @@ from aws_cdk import (
     aws_elasticloadbalancingv2 as elasticloadbalancingv2
 )
 
-
-
 class WordpressEcsConstructStack(core.Stack):
 
-    def __init__(self, scope: core.Construct, construct_id: str, **kwargs) -> None:
+    def __init__(self, scope: core.Construct, construct_id: str, props, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
-
-        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ec2/Vpc.html
-        vpc = ec2.Vpc(self, "VPC", 
-            max_azs=3,
-            cidr=cpvCIDR
-
-        )    
-        
-        # default is all AZs in region
-        # vpc=ec2.Vpc.from_lookup( self, "VPC",
-        #     vpc_id=VpcID
-        # )
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Cluster.html?highlight=ecs%20cluster#aws_cdk.aws_ecs.Cluster
         cluster = ecs.Cluster(self, "Cluster", 
-            vpc=vpc, 
+            vpc=props['vpc'], 
             container_insights=enable_container_insights
         )
 
@@ -77,7 +63,6 @@ class WordpressEcsConstructStack(core.Stack):
                 "DBUSERPASS": ecs.Secret.from_secrets_manager( SecretsManagerTest, "password" ),
                 "DBNAME": ecs.Secret.from_secrets_manager( SecretsManagerTest, "database_name" )
             },
-            #command = ["sh", "-c" ,"cat /var/www/localhost/htdocs/wp-config.php"]#ToDo: Remove this, just a test to verify secrets are getting pulled in right
         )
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/ContainerDefinition.html?highlight=add_port_mappings#aws_cdk.aws_ecs.ContainerDefinition.add_port_mappings
@@ -115,11 +100,3 @@ class WordpressEcsConstructStack(core.Stack):
             scale_out_cooldown = core.Duration.seconds(30),
             scale_in_cooldown = core.Duration.seconds(60)
         )
-        # ECSAutoScaler.scale_to_track_custom_metric( "maxMemScale", 
-        #     metric = EcsService.metric(
-        #         metric_name = MemoryUtilized
-        #     ) ,
-        #     target_value = 90,
-        #     scale_out_cooldown = core.Duration.seconds(30),
-        #     scale_in_cooldown = core.Duration.seconds(60)
-        # )

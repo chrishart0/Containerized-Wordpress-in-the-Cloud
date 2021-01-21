@@ -6,7 +6,7 @@ with open("README.md") as fp:
 
 
 setuptools.setup(
-    name="wordpress_ecs_construct",
+    name="wordpress_construct",
     version="0.0.1",
 
     description="An empty CDK Python app",
@@ -15,8 +15,8 @@ setuptools.setup(
 
     author="author",
 
-    package_dir={"": "wordpress_ecs_construct"},
-    packages=setuptools.find_packages(where="wordpress_ecs_construct"),
+    package_dir={"": "wordpress_construct"},
+    packages=setuptools.find_packages(where="wordpress_construct"),
 
     install_requires=[
         "aws-cdk.core==1.83.0",

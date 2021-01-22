@@ -22,11 +22,19 @@ RUN echo "Download and unzip newest version of wordpress" \
 #Copy entrypoint script to file system
 COPY docker-entrypoint.sh /usr/bin/docker-entrypoint.sh
 
+#Cleanup unneeded user
+RUN deluser www-data
+
+#COPY app ./
+
+#Copy .htaccess
+COPY .htaccess /var/www/localhost/htdocs/.htaccess
+
 #Concatenated RUN commands
 #php-xml required for Amazon Web Services SDK used by WP Offload Media Lite
 RUN apk add --update apache2 php7-apache2 php7-mbstring php7-session php7-json php7-pdo php7-openssl php7-common php7-mysqli \
         php7-tokenizer php7-pdo php7-pdo_mysql php7-xml php7-simplexml php7-iconv php7-gd php7-curl php7-imap php7-cgi fcgi \
-        php7-soap php7-xmlrpc php7-posix php7-mcrypt php7-gettext php7-ldap php7-ctype php7-dom php-xml\
+        php7-soap php7-xmlrpc php7-posix php7-mcrypt php7-gettext php7-ldap php7-ctype php7-dom php-xml php7-bcmath php7-exif php7-fileinfo php7-pecl-imagick\
     && sed -i '/LoadModule rewrite_module/s/^#//g' /etc/apache2/httpd.conf \
     && sed -i '/LoadModule session_module/s/^#//g' /etc/apache2/httpd.conf \
     && sed -i 's/AllowOverride\ None/AllowOverride\ All/g' /etc/apache2/httpd.conf \

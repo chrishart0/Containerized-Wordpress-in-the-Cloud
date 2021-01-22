@@ -25,10 +25,9 @@ class WordpressEcsConstructStack(core.Stack):
         AccessPoint = props['FileSystem'].add_access_point( "local-access-point",
             path=f"/{IdentifierName}",
             create_acl = efs.Acl(
-                owner_uid="100", #id -u apache
-                owner_gid="101", #id -g apache
+                owner_uid="100", #https://aws.amazon.com/blogs/containers/developers-guide-to-using-amazon-efs-with-amazon-ecs-and-aws-fargate-part-2/
+                owner_gid="101",
                 permissions="0755"
-
             )
         )
 
@@ -52,16 +51,15 @@ class WordpressEcsConstructStack(core.Stack):
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Volume.html#aws_cdk.aws_ecs.Volume
         WordpressEfsVolume = ecs.Volume (
-                name = "efs",
-                efs_volume_configuration = ecs.EfsVolumeConfiguration(
-                    file_system_id = props['FileSystem'].file_system_id,
-                    #root_directory = IdentifierName, #Do not use while using an EFS access point
-                    transit_encryption = "ENABLED",
-                    authorization_config = ecs.AuthorizationConfig(
-                        access_point_id = AccessPoint.access_point_id,
-                        iam = "DISABLED"
-                    )
+            name = "efs",
+            efs_volume_configuration = ecs.EfsVolumeConfiguration(
+                file_system_id = props['FileSystem'].file_system_id,
+                #root_directory = IdentifierName, #Do not use while using an EFS access point
+                transit_encryption = "ENABLED",
+                authorization_config = ecs.AuthorizationConfig(
+                    access_point_id = AccessPoint.access_point_id
                 )
+            )
         )
 
         #Create Task Definition

@@ -18,14 +18,18 @@ class WordpressEcsConstructStack(core.Stack):
     def __init__(self, scope: core.Construct, construct_id: str, props, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs) 
 
-        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_efs/FileSystem.html
-        FileSystem = efs.FileSystem(self, "MyEfsFileSystem",
-            vpc=props['vpc'],
-            encrypted=True, # file system is not encrypted by default
-            lifecycle_policy = efs_lifecycle_policy,
-            performance_mode = efs.PerformanceMode.GENERAL_PURPOSE,
-            removal_policy = core.RemovalPolicy(efs_removal_policy),
-            enable_automatic_backups = efs_automatic_backups,
+        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_efs/FileSystem.html#aws_cdk.aws_efs.FileSystem.add_access_point
+        #Access points allow multiple WordPress file systems to live on the same EFS Volume
+        #The more data on an EFS volume the better it will preform
+        #This provides a high level of security while also optimizing performance
+        AccessPoint = props['FileSystem'].add_access_point( "local-access-point",
+            path=f"/{IdentifierName}",
+            create_acl = efs.Acl(
+                owner_uid="100", #id -u apache
+                owner_gid="101", #id -g apache
+                permissions="0755"
+
+            )
         )
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Cluster.html?highlight=ecs%20cluster#aws_cdk.aws_ecs.Cluster
@@ -46,12 +50,17 @@ class WordpressEcsConstructStack(core.Stack):
             secret_name = DBCredSecretsKey
         )
 
-        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateTaskDefinition.html
+        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Volume.html#aws_cdk.aws_ecs.Volume
         WordpressEfsVolume = ecs.Volume (
                 name = "efs",
                 efs_volume_configuration = ecs.EfsVolumeConfiguration(
-                    file_system_id = FileSystem.file_system_id,
-                    root_directory = "-".join([Environment, SubProductName])
+                    file_system_id = props['FileSystem'].file_system_id,
+                    #root_directory = IdentifierName, #Do not use while using an EFS access point
+                    transit_encryption = "ENABLED",
+                    authorization_config = ecs.AuthorizationConfig(
+                        access_point_id = AccessPoint.access_point_id,
+                        iam = "DISABLED"
+                    )
                 )
         )
 
@@ -119,7 +128,7 @@ class WordpressEcsConstructStack(core.Stack):
 
         #https://gist.github.com/phillippbertram/ee312b09c3982d76b9799653ed6d6201
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ec2/Connections.html#aws_cdk.aws_ec2.Connections
-        EcsService.service.connections.allow_to(FileSystem, ec2.Port.tcp(2049))   #Open hole to ECS in EFS SG
+        EcsService.service.connections.allow_to(props['FileSystem'], ec2.Port.tcp(2049))   #Open hole to ECS in EFS SG
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateService.html#aws_cdk.aws_ecs.FargateService.auto_scale_task_count
         ECSAutoScaler = EcsService.service.auto_scale_task_count(max_capacity=containerMaxCount, min_capacity=containerMinCount)

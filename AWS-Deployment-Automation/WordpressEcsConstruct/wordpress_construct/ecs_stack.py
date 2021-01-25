@@ -54,7 +54,6 @@ class WordpressEcsConstructStack(core.Stack):
             name = "efs",
             efs_volume_configuration = ecs.EfsVolumeConfiguration(
                 file_system_id = props['FileSystem'].file_system_id,
-                #root_directory = IdentifierName, #Do not use while using an EFS access point
                 transit_encryption = "ENABLED",
                 authorization_config = ecs.AuthorizationConfig(
                     access_point_id = AccessPoint.access_point_id
@@ -127,6 +126,20 @@ class WordpressEcsConstructStack(core.Stack):
         #https://gist.github.com/phillippbertram/ee312b09c3982d76b9799653ed6d6201
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ec2/Connections.html#aws_cdk.aws_ec2.Connections
         EcsService.service.connections.allow_to(props['FileSystem'], ec2.Port.tcp(2049))   #Open hole to ECS in EFS SG
+
+        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_elasticloadbalancingv2/ApplicationTargetGroup.html#aws_cdk.aws_elasticloadbalancingv2.ApplicationTargetGroup.set_attribute
+        EcsService.target_group.set_attribute(
+            key="load_balancing.algorithm.type",
+            value="least_outstanding_requests"
+        )
+        EcsService.target_group.set_attribute(
+            key="deregistration_delay.timeout_seconds",
+            value="30"
+        )
+        EcsService.target_group.configure_health_check(
+            healthy_threshold_count=5, #2-10
+            timeout=core.Duration.seconds(29),
+        )
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateService.html#aws_cdk.aws_ecs.FargateService.auto_scale_task_count
         ECSAutoScaler = EcsService.service.auto_scale_task_count(max_capacity=containerMaxCount, min_capacity=containerMinCount)

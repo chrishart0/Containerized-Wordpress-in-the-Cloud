@@ -22,3 +22,7 @@ Automate the deployment and management of cheap, high availability, containerize
 # How to use
 
 This application is deployed with the AWS CDK. Navigate to the [WordpressEcsConstruct](AWS-Deployment-Automation/WordpressEcsConstruct) directory for instructions on how to deploy this application with the CDK.
+
+# Useful info
+
+https://aws.amazon.com/blogs/storage/optimizing-wordpress-performance-with-amazon-efs/

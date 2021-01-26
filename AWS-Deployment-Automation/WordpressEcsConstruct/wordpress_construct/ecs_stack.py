@@ -9,8 +9,28 @@ from aws_cdk import (
     aws_secretsmanager as secretsmanager,
     aws_iam as iam,
     aws_route53 as route53,
-    aws_elasticloadbalancingv2 as elasticloadbalancingv2
+    aws_elasticloadbalancingv2 as elasticloadbalancingv2,
+    aws_rds as rds
 )
+
+Environment = "Dev"
+ProductName = "Wordpress"
+SubProductName = "Test"
+DBCredSecretsKey = "dev/db/wordpress/admin"
+ContainerLogRetentionPeriod = "THREE_MONTHS"
+ContainerRepoName = "alpine-apache-wordpress"
+ContainerTag = "feature-cdk-init"
+TROUBLESHOOTING_MODE_ENABLED = "false" #WARNING! SET THIS TO FALSE
+cpvCIDR = "10.1.0.0/16"
+domain_name="kg.wp.tedevops.com"
+zone_name="wp.tedevops.com"
+domain_zone="Z102380729N6XS64RENT3"
+enable_container_insights=True
+cpuSize = 256
+memorySize = 512
+containerDesiredCount = 1
+containerMaxCount = 2
+containerMinCount = 1
 
 class WordpressEcsConstructStack(core.Stack):
 
@@ -84,7 +104,11 @@ class WordpressEcsConstructStack(core.Stack):
             protocol=elasticloadbalancingv2.ApplicationProtocol("HTTPS"),
             target_protocol=elasticloadbalancingv2.ApplicationProtocol("HTTP"),
             platform_version = ecs.FargatePlatformVersion("VERSION1_4"), #Required for EFS
-        )  
+            security_groups = [
+                ec2.SecurityGroup.from_security_group_id(self, "EcsToRdsSeurityGroup", security_group_id=props["EcsToRdsSeurityGroup"].security_group_id)
+            ],
+        )
+          
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateService.html#aws_cdk.aws_ecs.FargateService.auto_scale_task_count
         ECSAutoScaler = EcsService.service.auto_scale_task_count(max_capacity=containerMaxCount, min_capacity=containerMinCount)
@@ -100,3 +124,8 @@ class WordpressEcsConstructStack(core.Stack):
             scale_out_cooldown = core.Duration.seconds(30),
             scale_in_cooldown = core.Duration.seconds(60)
         )
+        #https://gist.github.com/phillippbertram/ee312b09c3982d76b9799653ed6d6201
+        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ec2/Connections.html#aws_cdk.aws_ec2.Connections
+        #EcsService.service.connections.allow_to(props['rds_instance'], ec2.Port.tcp(3306))   #Open hole to RDS in RDS SG
+        
+        #EcsService.service.connections.add_security_group(ec2.SecurityGroup.from_security_group_id(self, "EcsToRdsSeurityGroup", security_group_id=props["EcsToRdsSeurityGroup"].security_group_id) )

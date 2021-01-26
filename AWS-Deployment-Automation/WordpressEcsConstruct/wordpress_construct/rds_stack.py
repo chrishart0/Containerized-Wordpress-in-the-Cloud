@@ -19,6 +19,7 @@ class WordpressRdsConstructStack(core.Stack):
         super().__init__(scope, id, **kwargs)
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_rds/DatabaseCluster.html
+        ##TODO:ADD Aurora Serverless Option
         rds_instance = rds.DatabaseCluster(self,'wordpress-db',
             engine=rds.DatabaseClusterEngine.aurora_mysql(
                 version=rds.AuroraMysqlEngineVersion.VER_2_07_2

@@ -16,7 +16,7 @@ from aws_cdk import (
 Environment = "Dev"
 ProductName = "Wordpress"
 SubProductName = "Test"
-DBCredSecretsKey = "dev/db/wordpress/admin"
+DBCredSecretsKey = "dev/db/wordpress-kg/admin"
 ContainerLogRetentionPeriod = "THREE_MONTHS"
 ContainerRepoName = "alpine-apache-wordpress"
 ContainerTag = "feature-cdk-init"
@@ -54,6 +54,14 @@ class WordpressEcsConstructStack(core.Stack):
         SecretsManagerTest = secretsmanager.Secret.from_secret_name_v2( self, "SecretsManagerTest",
             secret_name=DBCredSecretsKey
         )
+        ##TODO
+        #WordpressDbConnectionSecret=secretsmanager.Secret(self, "WordpressDbConnectionSecret",
+        #    generate_secret_string=secretsmanager.SecretStringGenerator(
+        #                        secret_string_template={'test','test2'},
+        #                        generate_string_key={"password","pass2"},
+        #                    )
+#
+        #)
 
         #Create Task Definition
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateTaskDefinition.html

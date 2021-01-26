@@ -11,7 +11,7 @@ env = core.Environment(region="us-east-1")
 
 props = {
             'namespace':'wordpress',
-            'farm':'',
+            'farm':'-kg',
         }
 
 app = core.App()

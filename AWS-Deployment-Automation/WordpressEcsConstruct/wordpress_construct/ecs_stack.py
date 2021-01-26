@@ -13,6 +13,8 @@ from aws_cdk import (
     aws_rds as rds,
     aws_efs as efs
 )
+import json
+
 
 class WordpressEcsConstructStack(core.Stack):
 
@@ -50,6 +52,22 @@ class WordpressEcsConstructStack(core.Stack):
             secret_name = DBCredSecretsKey
         )
 
+        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Secret.html
+        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_secretsmanager/SecretStringGenerator.html
+        #TODO
+        dbtest = {
+            "database_name":'',
+            "username":'',
+            "host":str(props["rds_instance"].cluster_endpoint.hostname),
+            "password":''
+        }     
+        WordpressDbConnectionSecret=secretsmanager.Secret(self, "WordpressDbConnectionSecret",
+            generate_secret_string=secretsmanager.SecretStringGenerator(
+                                secret_string_template=json.dumps(dbtest),
+                                generate_string_key="random"
+                            )            
+        )
+
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Volume.html#aws_cdk.aws_ecs.Volume
         WordpressEfsVolume = ecs.Volume (
             name = "efs",
@@ -61,15 +79,6 @@ class WordpressEcsConstructStack(core.Stack):
                 )
             )
         )
-        
-        ##TODO
-        #WordpressDbConnectionSecret=secretsmanager.Secret(self, "WordpressDbConnectionSecret",
-        #    generate_secret_string=secretsmanager.SecretStringGenerator(
-        #                        secret_string_template={'test','test2'},
-        #                        generate_string_key={"password","pass2"},
-        #                    )
-        #
-        #)
 
         #Create Task Definition
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateTaskDefinition.html

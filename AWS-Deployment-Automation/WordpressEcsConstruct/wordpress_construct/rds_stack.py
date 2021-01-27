@@ -2,7 +2,7 @@ from aws_cdk import (
     core,
     aws_rds as rds,
     aws_ec2 as ec2,
-    aws_secretsmanager as sm
+    aws_lambda as _lambda
 )
 
 import json
@@ -34,6 +34,17 @@ class WordpressRdsConstructStack(core.Stack):
             description = "Allow WordPress containers to talk to RDS"
         )
 
+        db_cred_generator = _lambda.Function(
+            self, 'db_creds_generator',
+            runtime=_lambda.Runtime.PYTHON_3_8,
+            handler='db_creds_generator.handler',
+            code=_lambda.Code.asset('lambda'),
+            environment={
+                'test': 'test',
+            }
+        )
+
+        #Set Permissions and Sec Groups
         rds_instance.connections.allow_from(EcsToRdsSeurityGroup, ec2.Port.tcp(3306))   #Open hole to RDS in RDS SG
 
         self.output_props = props.copy()

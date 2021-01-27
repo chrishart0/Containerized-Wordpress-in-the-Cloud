@@ -3,6 +3,7 @@
 from aws_cdk import core
 
 from wordpress_construct.vpc_stack import WordpressVpcConstructStack
+from wordpress_construct.base_stack import WordpressBaseConstructStack
 from wordpress_construct.rds_stack import WordpressRdsConstructStack
 from wordpress_construct.efs_stack import WordpressEfsConstructStack
 from wordpress_construct.ecs_stack import WordpressEcsConstructStack
@@ -11,11 +12,12 @@ env = core.Environment(region="us-east-1")
 
 props = {
             'namespace':'wordpress',
-            'farm':'-kg',
+            'farm':'',
         }
 
 app = core.App()
 vpc_stack = WordpressVpcConstructStack(app, f"{props['namespace']}{props['farm']}-vpc-construct", props=props, env=env)
+base_stack = WordpressBaseConstructStack(app, f"{props['namespace']}{props['farm']}-base-construct", props=props, env=env)
 
 rds_stack = WordpressRdsConstructStack(app, f"{props['namespace']}{props['farm']}-rds-construct", vpc_stack.outputs , env=env)
 rds_stack.add_dependency(vpc_stack)

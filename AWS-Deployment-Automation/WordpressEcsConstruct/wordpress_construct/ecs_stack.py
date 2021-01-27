@@ -46,14 +46,8 @@ class WordpressEcsConstructStack(core.Stack):
         #     version=1
         # )
 
-        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_secretsmanager/Secret.html#aws_cdk.aws_secretsmanager.Secret.from_secret_name_v2
-        SecretsManagerTest = secretsmanager.Secret.from_secret_name_v2( self, "SecretsManagerTest",
-            secret_name = DBCredSecretsKey
-        )
-
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Secret.html
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_secretsmanager/SecretStringGenerator.html
-        #TODO
         dbtest = {
             "database_name":'',
             "username":'',
@@ -64,6 +58,13 @@ class WordpressEcsConstructStack(core.Stack):
                                 secret_string_template=json.dumps(dbtest),
                                 generate_string_key="password"
                             )            
+        )
+
+        #ToDO: Lambda call to populate secrets but only 
+
+        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_secretsmanager/Secret.html#aws_cdk.aws_secretsmanager.Secret.from_secret_name_v2
+        SecretsManagerTest = secretsmanager.Secret.from_secret_name_v2( self, "SecretsManagerTest",
+            secret_name = DBCredSecretsKey
         )
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Volume.html#aws_cdk.aws_ecs.Volume
@@ -102,10 +103,10 @@ class WordpressEcsConstructStack(core.Stack):
             environment = {"TROUBLESHOOTING_MODE_ENABLED": TROUBLESHOOTING_MODE_ENABLED},
             secrets = {
                 # "PARAMETERSTORETEST": ecs.Secret.from_ssm_parameter( ParameterStoreTest ),
-                "DBHOST": ecs.Secret.from_secrets_manager( SecretsManagerTest, "host" ),
-                "DBUSER": ecs.Secret.from_secrets_manager( SecretsManagerTest, "username" ),
-                "DBUSERPASS": ecs.Secret.from_secrets_manager( SecretsManagerTest, "password" ),
-                "DBNAME": ecs.Secret.from_secrets_manager( SecretsManagerTest, "database_name" )
+                "DBHOST": ecs.Secret.from_secrets_manager( WordpressDbConnectionSecret, "host" ),
+                "DBUSER": ecs.Secret.from_secrets_manager( WordpressDbConnectionSecret, "username" ),
+                "DBUSERPASS": ecs.Secret.from_secrets_manager( WordpressDbConnectionSecret, "password" ),
+                "DBNAME": ecs.Secret.from_secrets_manager( WordpressDbConnectionSecret, "database_name" )
             },
         )
 

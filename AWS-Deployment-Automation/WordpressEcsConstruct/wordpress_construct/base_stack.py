@@ -21,7 +21,7 @@ class WordpressBaseConstructStack(core.Stack):
     def __init__(self, scope: core.Construct, id: str, props, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        # Example automatically generated. See https://github.com/aws/jsii/issues/826
+        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ec2/Vpc.html
         vpc = ec2.Vpc(self, "vpc",
             cidr=cpvCIDR,
             max_azs=3,
@@ -44,6 +44,12 @@ class WordpressBaseConstructStack(core.Stack):
             ]
         )
 
+        rds_subnetGroup = rds.SubnetGroup(self, "rds_subnetGroup",
+            description = f"Group for {props['namespace']}{props['farm']} DB",
+            vpc = vpc,
+            vpc_subnets = ec2.SubnetSelection(subnet_type= ec2.SubnetType.ISOLATED)
+        )
+
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_rds/DatabaseCluster.html
         ##TODO:ADD Aurora Serverless Option
         rds_instance = rds.DatabaseCluster(self,'wordpress-db',
@@ -52,7 +58,8 @@ class WordpressBaseConstructStack(core.Stack):
             ),
             instance_props=rds.InstanceProps(
                 vpc=vpc
-            )
+            ),
+            subnet_group=rds_subnetGroup
         )
 
         EcsToRdsSeurityGroup= ec2.SecurityGroup(self, "EcsToRdsSeurityGroup",
@@ -60,13 +67,16 @@ class WordpressBaseConstructStack(core.Stack):
             description = "Allow WordPress containers to talk to RDS"
         )
 
+        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_lambda/Function.html
         db_cred_generator = _lambda.Function(
             self, 'db_creds_generator',
             runtime=_lambda.Runtime.PYTHON_3_8,
             handler='db_creds_generator.handler',
             code=_lambda.Code.asset('lambda'),
+            vpc=vpc,
+            vpc_subnets=ec2.SubnetSelection(subnet_type= ec2.SubnetType.ISOLATED),        #vpc.select_subnets(subnet_type = ec2.SubnetType("ISOLATED")).subnets ,
             environment={
-                'test': 'test',
+                'SECRET_NAME': rds_instance.secret.secret_name,
             }
         )
 

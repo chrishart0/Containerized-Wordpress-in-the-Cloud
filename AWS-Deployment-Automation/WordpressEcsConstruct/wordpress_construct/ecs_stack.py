@@ -1,3 +1,4 @@
+import json
 from aws_cdk import (
     core, 
     aws_ec2 as ec2,
@@ -13,7 +14,6 @@ from aws_cdk import (
     aws_rds as rds,
     aws_efs as efs
 )
-import json
 
 class WordpressEcsConstructStack(core.Stack):
 

@@ -13,6 +13,7 @@ from aws_cdk import (
     aws_rds as rds,
     aws_efs as efs
 )
+import json
 
 class WordpressEcsConstructStack(core.Stack):
 
@@ -53,18 +54,17 @@ class WordpressEcsConstructStack(core.Stack):
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Secret.html
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_secretsmanager/SecretStringGenerator.html
         #TODO
-        #dbtest = {
-        #    "database_name":'',
-        #    "username":'',
-        #    "host":str(props["rds_instance"].cluster_endpoint.hostname),
-        #    "password":''
-        #}     
-        #WordpressDbConnectionSecret=secretsmanager.Secret(self, "WordpressDbConnectionSecret",
-        #    generate_secret_string=secretsmanager.SecretStringGenerator(
-        #                        secret_string_template=json.dumps(dbtest),
-        #                        generate_string_key="random"
-        #                    )            
-        #)
+        dbtest = {
+            "database_name":'',
+            "username":'',
+            "host":str(props["rds_instance"].cluster_endpoint.hostname)
+        }     
+        WordpressDbConnectionSecret=secretsmanager.Secret(self, "WordpressDbConnectionSecret",
+            generate_secret_string=secretsmanager.SecretStringGenerator(
+                                secret_string_template=json.dumps(dbtest),
+                                generate_string_key="password"
+                            )            
+        )
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Volume.html#aws_cdk.aws_ecs.Volume
         WordpressEfsVolume = ecs.Volume (

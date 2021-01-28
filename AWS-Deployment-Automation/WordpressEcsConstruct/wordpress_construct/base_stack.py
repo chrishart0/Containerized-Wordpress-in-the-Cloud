@@ -45,7 +45,7 @@ class WordpressBaseConstructStack(core.Stack):
         )
 
         rds_subnetGroup = rds.SubnetGroup(self, "rds_subnetGroup",
-            description = f"Group for {props['namespace']}{props['farm']} DB",
+            description = f"Group for {props['environment']}-{props['application']}-{props['unit']} DB",
             vpc = vpc,
             vpc_subnets = ec2.SubnetSelection(subnet_type= ec2.SubnetType.ISOLATED)
         )

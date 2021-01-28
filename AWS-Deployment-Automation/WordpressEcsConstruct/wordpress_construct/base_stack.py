@@ -8,6 +8,8 @@ from aws_cdk import (
 )
 
 cpvCIDR = "10.2.0.0/16"
+rds_enable_performance_insights = False
+rds_instance_type = "db.t2.micro"
 efs_removal_policy = "SNAPSHOT" #RETAIN
 efs_lifecycle_policy = efs.LifecyclePolicy.AFTER_7_DAYS # https://docs.aws.amazon.com/efs/latest/ug/lifecycle-management-efs.html
 efs_automatic_backups = True
@@ -59,7 +61,8 @@ class WordpressBaseConstructStack(core.Stack):
             instances=1,
             instance_props=rds.InstanceProps(
                 vpc=vpc,
-                instance_type=ec2.InstanceType.InstanceSize(db.t3.medium)
+                enable_performance_insights=rds_enable_performance_insights,
+                instance_type=ec2.InstanceType(instance_type_identifier=rds_instance_type)
             ),
             subnet_group=rds_subnetGroup   
         )

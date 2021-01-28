@@ -7,13 +7,6 @@ from aws_cdk import (
     aws_efs as efs
 )
 
-cpvCIDR = "10.2.0.0/16"
-rds_enable_performance_insights = False
-rds_instance_type = "db.t2.micro"
-efs_removal_policy = "SNAPSHOT" #RETAIN
-efs_lifecycle_policy = efs.LifecyclePolicy.AFTER_7_DAYS # https://docs.aws.amazon.com/efs/latest/ug/lifecycle-management-efs.html
-efs_automatic_backups = True
-
 class WordpressBaseConstructStack(core.Stack):
 
     def getDBEngine(self,engine):
@@ -25,7 +18,7 @@ class WordpressBaseConstructStack(core.Stack):
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ec2/Vpc.html
         vpc = ec2.Vpc(self, "vpc",
-            cidr=cpvCIDR,
+            cidr=props['vpc_CIDR'],
             max_azs=3,
             subnet_configuration=[
                 {
@@ -61,10 +54,14 @@ class WordpressBaseConstructStack(core.Stack):
             instances=1,
             instance_props=rds.InstanceProps(
                 vpc=vpc,
-                enable_performance_insights=rds_enable_performance_insights,
-                instance_type=ec2.InstanceType(instance_type_identifier=rds_instance_type)
+                enable_performance_insights=props['rds_enable_performance_insights'],
+                instance_type=ec2.InstanceType(instance_type_identifier=props['rds_instance_type'])
             ),
-            subnet_group=rds_subnetGroup   
+            subnet_group=rds_subnetGroup,
+            storage_encrypted=props['rds_storage_encrypted'],
+            backup=rds.BackupProps(
+                retention=core.Duration.days(props['rds_automated_backup_retention_days'])
+            )
         )
 
         EcsToRdsSeurityGroup= ec2.SecurityGroup(self, "EcsToRdsSeurityGroup",
@@ -89,21 +86,28 @@ class WordpressBaseConstructStack(core.Stack):
         rds_instance.connections.allow_from(EcsToRdsSeurityGroup, ec2.Port.tcp(3306))   #Open hole to RDS in RDS SG
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_efs/FileSystem.html
-        FileSystem = efs.FileSystem(self, "MyEfsFileSystem",
-            vpc=vpc,
+        file_system = efs.FileSystem(self, "MyEfsFileSystem",
+            vpc = vpc,
             encrypted=True, # file system is not encrypted by default
-            lifecycle_policy = efs_lifecycle_policy,
+            lifecycle_policy = props['efs_lifecycle_policy'],
             performance_mode = efs.PerformanceMode.GENERAL_PURPOSE,
             throughput_mode = efs.ThroughputMode.BURSTING,
-            removal_policy = core.RemovalPolicy(efs_removal_policy),
-            enable_automatic_backups = efs_automatic_backups
+            removal_policy = core.RemovalPolicy(props['efs_removal_policy']),
+            enable_automatic_backups = props['efs_automatic_backups']
         )
+
+        if props['deploy_bastion_host']:
+            #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ec2/BastionHostLinux.html
+            bastion_host = ec2.BastionHostLinux(self, 'bastion_host',
+                vpc = vpc
+            )
+            rds_instance.connections.allow_from(bastion_host, ec2.Port.tcp(3306))
 
         self.output_props = props.copy()
         self.output_props["vpc"] = vpc
         self.output_props["rds_instance"] = rds_instance
         self.output_props["EcsToRdsSeurityGroup"] = EcsToRdsSeurityGroup
-        self.output_props["FileSystem"] = FileSystem
+        self.output_props["file_system"] = file_system
     
     @property
     def outputs(self):

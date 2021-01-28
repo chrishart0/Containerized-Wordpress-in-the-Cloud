@@ -24,8 +24,8 @@ class WordpressEcsConstructStack(core.Stack):
         #Access points allow multiple WordPress file systems to live on the same EFS Volume
         #The more data on an EFS volume the better it will preform
         #This provides a high level of security while also optimizing performance
-        AccessPoint = props['FileSystem'].add_access_point( "local-access-point",
-            path=f"/{IdentifierName}",
+        AccessPoint = props['file_system'].add_access_point( "local-access-point",
+            path=f"/{props['IdentifierName']}",
             create_acl = efs.Acl(
                 owner_uid="100", #https://aws.amazon.com/blogs/containers/developers-guide-to-using-amazon-efs-with-amazon-ecs-and-aws-fargate-part-2/
                 owner_gid="101",
@@ -36,7 +36,7 @@ class WordpressEcsConstructStack(core.Stack):
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Cluster.html?highlight=ecs%20cluster#aws_cdk.aws_ecs.Cluster
         cluster = ecs.Cluster(self, "Cluster", 
             vpc = props['vpc'], 
-            container_insights = enable_container_insights
+            container_insights = props['ecs_enable_container_insights']
         )
 
         #Get needed secrets
@@ -63,16 +63,11 @@ class WordpressEcsConstructStack(core.Stack):
 
         #ToDO: Lambda call to populate secrets but only 
 
-        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_secretsmanager/Secret.html#aws_cdk.aws_secretsmanager.Secret.from_secret_name_v2
-        SecretsManagerTest = secretsmanager.Secret.from_secret_name_v2( self, "SecretsManagerTest",
-            secret_name = DBCredSecretsKey
-        )
-
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Volume.html#aws_cdk.aws_ecs.Volume
         WordpressEfsVolume = ecs.Volume (
             name = "efs",
             efs_volume_configuration = ecs.EfsVolumeConfiguration(
-                file_system_id = props['FileSystem'].file_system_id,
+                file_system_id = props['file_system'].file_system_id,
                 transit_encryption = "ENABLED",
                 authorization_config = ecs.AuthorizationConfig(
                     access_point_id = AccessPoint.access_point_id
@@ -83,8 +78,8 @@ class WordpressEcsConstructStack(core.Stack):
         #Create Task Definition
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateTaskDefinition.html
         WordpressTask = ecs.FargateTaskDefinition(self, "TaskDefinition",
-            cpu = cpuSize,
-            memory_limit_mib = memorySize,
+            cpu = props['ecs_cpu_size'],
+            memory_limit_mib = props['ecs_memory_size'],
             volumes=[WordpressEfsVolume]
         )
 
@@ -92,16 +87,16 @@ class WordpressEcsConstructStack(core.Stack):
         WordpressContainer = WordpressTask.add_container( "Wordpress",
             image=ecs.ContainerImage.from_ecr_repository(
                 repository=ecr.Repository.from_repository_name(self, "wpimage",
-                    repository_name = ContainerRepoName
+                    repository_name = props['ecs_container_repo_name']
                 ),
-                tag=ContainerTag
+                tag=props['ecs_container_tag']
             ),
             logging=ecs.LogDriver.aws_logs(
                 stream_prefix = "container",
-                #log_group = "{Environment}/{ProductName}/{SubProductName}", #ToDo make sure I like log group name
-                log_retention = logs.RetentionDays(ContainerLogRetentionPeriod)
+                #log_group = "{props['environment']}/{props['unit']}/{props['application']}", #ToDo make sure I like log group name
+                log_retention = logs.RetentionDays(props['ecs_log_retention_period'])
             ),
-            environment = {"TROUBLESHOOTING_MODE_ENABLED": TROUBLESHOOTING_MODE_ENABLED},
+            environment = {"TROUBLESHOOTING_MODE_ENABLED": props['TROUBLESHOOTING_MODE_ENABLED']},
             secrets = {
                 # "PARAMETERSTORETEST": ecs.Secret.from_ssm_parameter( ParameterStoreTest ),
                 "DBHOST": ecs.Secret.from_secrets_manager( WordpressDbConnectionSecret, "host" ),
@@ -129,12 +124,12 @@ class WordpressEcsConstructStack(core.Stack):
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs_patterns/ApplicationLoadBalancedFargateService.html
         EcsService = ecs_patterns.ApplicationLoadBalancedFargateService(self, "EcsService",
             cluster = cluster,
-            desired_count = containerDesiredCount,
+            desired_count = props['ecs_container_desired_count'],
             task_definition = WordpressTask,
             enable_ecs_managed_tags = True,
             public_load_balancer = True,
-            domain_name=domain_name,
-            domain_zone= route53.HostedZone.from_hosted_zone_attributes(self, "hostedZone", hosted_zone_id=domain_zone, zone_name=zone_name) ,
+            domain_name=props['domain_name'],
+            domain_zone= route53.HostedZone.from_hosted_zone_attributes(self, "hostedZone", hosted_zone_id=props['domain_zone'], zone_name=props['zone_name']) ,
             listener_port=443,
             redirect_http=True,
             protocol=elasticloadbalancingv2.ApplicationProtocol("HTTPS"),
@@ -144,11 +139,10 @@ class WordpressEcsConstructStack(core.Stack):
                 ec2.SecurityGroup.from_security_group_id(self, "EcsToRdsSeurityGroup", security_group_id=props["EcsToRdsSeurityGroup"].security_group_id)
             ],
         )
-          
 
         #https://gist.github.com/phillippbertram/ee312b09c3982d76b9799653ed6d6201
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ec2/Connections.html#aws_cdk.aws_ec2.Connections
-        EcsService.service.connections.allow_to(props['FileSystem'], ec2.Port.tcp(2049))   #Open hole to ECS in EFS SG
+        EcsService.service.connections.allow_to(props['file_system'], ec2.Port.tcp(2049))   #Open hole to ECS in EFS SG
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_elasticloadbalancingv2/ApplicationTargetGroup.html#aws_cdk.aws_elasticloadbalancingv2.ApplicationTargetGroup.set_attribute
         EcsService.target_group.set_attribute(
@@ -165,7 +159,7 @@ class WordpressEcsConstructStack(core.Stack):
         )
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateService.html#aws_cdk.aws_ecs.FargateService.auto_scale_task_count
-        ECSAutoScaler = EcsService.service.auto_scale_task_count(max_capacity=containerMaxCount, min_capacity=containerMinCount)
+        ECSAutoScaler = EcsService.service.auto_scale_task_count(max_capacity=props['ecs_container_max_count'], min_capacity=props['ecs_container_min_count'])
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/ScalableTaskCount.html#aws_cdk.aws_ecs.ScalableTaskCount
         ECSAutoScaler.scale_on_cpu_utilization( "cpuScale", 

@@ -58,7 +58,8 @@ class WordpressBaseConstructStack(core.Stack):
             ),
             instances=1,
             instance_props=rds.InstanceProps(
-                vpc=vpc
+                vpc=vpc,
+                instance_type=ec2.InstanceType.InstanceSize(db.t3.medium)
             ),
             subnet_group=rds_subnetGroup   
         )

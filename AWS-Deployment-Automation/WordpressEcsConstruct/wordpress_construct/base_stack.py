@@ -56,10 +56,11 @@ class WordpressBaseConstructStack(core.Stack):
             engine=rds.DatabaseClusterEngine.aurora_mysql(
                 version=rds.AuroraMysqlEngineVersion.VER_2_07_2
             ),
+            instances=1,
             instance_props=rds.InstanceProps(
                 vpc=vpc
             ),
-            subnet_group=rds_subnetGroup
+            subnet_group=rds_subnetGroup   
         )
 
         EcsToRdsSeurityGroup= ec2.SecurityGroup(self, "EcsToRdsSeurityGroup",

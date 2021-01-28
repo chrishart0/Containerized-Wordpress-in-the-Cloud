@@ -56,7 +56,8 @@ class WordpressEcsConstructStack(core.Stack):
         WordpressDbConnectionSecret=secretsmanager.Secret(self, "WordpressDbConnectionSecret",
             generate_secret_string=secretsmanager.SecretStringGenerator(
                                 secret_string_template=json.dumps(dbtest),
-                                generate_string_key="password"
+                                generate_string_key="password",
+                                exclude_characters='/"'
                             )            
         )
 

@@ -115,7 +115,7 @@ class WordpressEcsConstructStack(core.Stack):
         #https://gist.github.com/phillippbertram/ee312b09c3982d76b9799653ed6d6201
         WordpressContainer.add_mount_points(
             ecs.MountPoint(
-                container_path = "/var/www/localhost/htdocs/wp-content/",
+                container_path = props['ecs_container_efs_path'],
                 read_only = False,
                 source_volume = WordpressEfsVolume.name
             )

@@ -11,7 +11,6 @@ from wordpress_construct.ecs_stack import WordpressEcsConstructStack
 env = core.Environment(region="us-east-1")
 
 props = {
-            
         }
 
 props['IdentifierName'] = f"{props['environment']}-{props['application']}-{props['unit']}"

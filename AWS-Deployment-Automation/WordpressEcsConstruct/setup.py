@@ -19,7 +19,7 @@ setuptools.setup(
     packages=setuptools.find_packages(where="wordpress_construct"),
 
     install_requires=[
-        "aws-cdk.core==1.83.0",
+        "aws-cdk.core==1.86.0",
     ],
 
     python_requires=">=3.6",

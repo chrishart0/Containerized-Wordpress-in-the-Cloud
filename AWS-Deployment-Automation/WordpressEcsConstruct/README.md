@@ -74,3 +74,18 @@ This does several things:
 * Creates a health.php file in the root web dir
 
 WARNING! Don't leave this option on in production. It will divulge info about your deployment that you do not want publicly available.
+
+### Bastion Host
+The base stack has the option to deploy a bastion host if the `deploy_bastion_host` flag is set to `True`
+
+You should only leave the bastion host up for the time you are using it. After you are done set the flag back to `False` and get rid of it.
+
+To connect to the bastion host using the following process
+```
+#Prereq: Install the aws session manager plugin if you have not already: https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html
+
+#First, locate the bastion host instance ID
+
+#Run the below command, make sure to change out instance-id with the correct instance ID
+aws ssm start-session --target instance-id
+```

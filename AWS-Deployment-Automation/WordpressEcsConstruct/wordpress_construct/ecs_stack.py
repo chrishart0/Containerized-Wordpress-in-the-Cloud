@@ -23,28 +23,25 @@ class WordpressEcsConstructStack(core.Stack):
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_efs/FileSystem.html#aws_cdk.aws_efs.FileSystem.add_access_point
         #Access points allow multiple WordPress file systems to live on the same EFS Volume
         #The more data on an EFS volume the better it will preform
-        #This provides a high level of security while also optimizing performance
-        AccessPoint = props['file_system'].add_access_point( "local-access-point",
-            path=f"/{props['IdentifierName']}",
-            create_acl = efs.Acl(
-                owner_uid="100", #https://aws.amazon.com/blogs/containers/developers-guide-to-using-amazon-efs-with-amazon-ecs-and-aws-fargate-part-2/
-                owner_gid="101",
-                permissions="0755"
+        #For each ecs_container_efs_paths passed in make an access point
+        #ToDo, validate file paths woth it?
+        AccessPoint = {}
+        for path in props['ecs_container_efs_paths']['SubDirectoriesForEFS']:
+            print('Making access point for',path)
+            AccessPoint[path] = props['file_system'].add_access_point( f"local-access-point-{path}",
+                path=f"/{props['IdentifierName']}{path}",
+                create_acl = efs.Acl(
+                    owner_uid="100", #https://aws.amazon.com/blogs/containers/developers-guide-to-using-amazon-efs-with-amazon-ecs-and-aws-fargate-part-2/
+                    owner_gid="101",
+                    permissions="0755"
+                )
             )
-        )
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Cluster.html?highlight=ecs%20cluster#aws_cdk.aws_ecs.Cluster
         cluster = ecs.Cluster(self, "Cluster", 
             vpc = props['vpc'], 
             container_insights = props['ecs_enable_container_insights']
         )
-
-        #Get needed secrets
-        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ssm/StringParameter.html?highlight=from_secure_string_parameter_attributes#aws_cdk.aws_ssm.StringParameter.from_secure_string_parameter_attributes
-        # ParameterStoreTest = ssm.StringParameter.from_secure_string_parameter_attributes( self, "ParameterStoreTest",
-        #     parameter_name="", #Remeber, KMS permissions for task execution role for parameter store key!
-        #     version=1
-        # )
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Secret.html
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_secretsmanager/SecretStringGenerator.html
@@ -61,26 +58,30 @@ class WordpressEcsConstructStack(core.Stack):
                             )            
         )
 
-        #ToDO: Lambda call to populate secrets but only 
+        #ToDo: Lambda call to populate secrets but only 
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Volume.html#aws_cdk.aws_ecs.Volume
-        WordpressEfsVolume = ecs.Volume (
-            name = "efs",
-            efs_volume_configuration = ecs.EfsVolumeConfiguration(
-                file_system_id = props['file_system'].file_system_id,
-                transit_encryption = "ENABLED",
-                authorization_config = ecs.AuthorizationConfig(
-                    access_point_id = AccessPoint.access_point_id
+        #Create and populate a list of volumes as defined in the ecs_container_efs_paths parameter
+        WordpressEfsVolumes = {}
+        for path in props['ecs_container_efs_paths']['SubDirectoriesForEFS']:
+            print('Making ecs.Volume() for',path)
+            WordpressEfsVolumes[path] = ecs.Volume (
+                name = f"efs{path.replace('/','-')}",
+                efs_volume_configuration = ecs.EfsVolumeConfiguration(
+                    file_system_id = props['file_system'].file_system_id,
+                    transit_encryption = "ENABLED",
+                    authorization_config = ecs.AuthorizationConfig(
+                        access_point_id = AccessPoint[path].access_point_id
+                    )
                 )
             )
-        )
 
         #Create Task Definition
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateTaskDefinition.html
         WordpressTask = ecs.FargateTaskDefinition(self, "TaskDefinition",
             cpu = props['ecs_cpu_size'],
             memory_limit_mib = props['ecs_memory_size'],
-            volumes=[WordpressEfsVolume]
+            volumes= list(WordpressEfsVolumes.values())
         )
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateTaskDefinition.html#aws_cdk.aws_ecs.FargateTaskDefinition.add_container
@@ -98,7 +99,6 @@ class WordpressEcsConstructStack(core.Stack):
             ),
             environment = {"TROUBLESHOOTING_MODE_ENABLED": props['TROUBLESHOOTING_MODE_ENABLED']},
             secrets = {
-                # "PARAMETERSTORETEST": ecs.Secret.from_ssm_parameter( ParameterStoreTest ),
                 "DBHOST": ecs.Secret.from_secrets_manager( WordpressDbConnectionSecret, "host" ),
                 "DBUSER": ecs.Secret.from_secrets_manager( WordpressDbConnectionSecret, "username" ),
                 "DBUSERPASS": ecs.Secret.from_secrets_manager( WordpressDbConnectionSecret, "password" ),
@@ -111,15 +111,16 @@ class WordpressEcsConstructStack(core.Stack):
             ecs.PortMapping( container_port=80, protocol=ecs.Protocol.TCP)
         )
 
-        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/ContainerDefinition.html?highlight=add_port_mappings#aws_cdk.aws_ecs.ContainerDefinition.add_port_mappings
+        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/ContainerDefinition.html?highlight=add_port_mappings#aws_cdk.aws_ecs.ContainerDefinition.add_mount_points
         #https://gist.github.com/phillippbertram/ee312b09c3982d76b9799653ed6d6201
-        WordpressContainer.add_mount_points(
-            ecs.MountPoint(
-                container_path = props['ecs_container_efs_path'],
-                read_only = False,
-                source_volume = WordpressEfsVolume.name
+        for path in props['ecs_container_efs_paths']['SubDirectoriesForEFS']:
+            WordpressContainer.add_mount_points(
+                ecs.MountPoint(
+                    container_path = f"{props['ecs_container_efs_paths']['RootWebDirectory']}{path}",
+                    read_only = False,
+                    source_volume = WordpressEfsVolumes[path].name,
+                )
             )
-        )
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs_patterns/ApplicationLoadBalancedFargateService.html
         EcsService = ecs_patterns.ApplicationLoadBalancedFargateService(self, "EcsService",

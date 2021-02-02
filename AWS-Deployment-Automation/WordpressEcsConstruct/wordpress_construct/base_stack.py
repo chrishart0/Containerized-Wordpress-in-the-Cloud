@@ -4,7 +4,9 @@ from aws_cdk import (
     aws_rds as rds,
     aws_ec2 as ec2,
     aws_lambda as _lambda,
-    aws_efs as efs
+    aws_efs as efs,
+    aws_ecs as ecs,
+    aws_ecs_patterns as ecs_patterns
 )
 
 class WordpressBaseConstructStack(core.Stack):
@@ -103,11 +105,39 @@ class WordpressBaseConstructStack(core.Stack):
             )
             rds_instance.connections.allow_from(bastion_host, ec2.Port.tcp(3306))
 
+        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Cluster.html?highlight=ecs%20cluster#aws_cdk.aws_ecs.Cluster
+        cluster = ecs.Cluster(self, "Cluster", 
+            vpc = vpc, 
+            container_insights = props['ecs_enable_container_insights']
+        )
+
+        ### Developer Tools ###
+        # SFTP into the EFS Shared File System
+
+        #Networking tool optional deployment
+        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateTaskDefinition.html
+        NetToolsTask = ecs.FargateTaskDefinition(self, "TaskDefinition",
+            cpu = 256,
+            memory_limit_mib = 512
+        )
+
+        # #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateTaskDefinition.html#aws_cdk.aws_ecs.FargateTaskDefinition.add_container
+        NetToolsContainer = NetToolsTask.add_container("NetTools", image=ecs.ContainerImage.from_registry('netresearch/sftp'), essential=True )
+        NetToolsContainer.add_port_mappings( ecs.PortMapping( container_port=22, protocol=ecs.Protocol.TCP) )
+
+        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateService.html?highlight=fargateservice#aws_cdk.aws_ecs.FargateService
+        service = ecs.FargateService(self, "Service",
+            cluster=cluster,
+            task_definition=NetToolsTask,
+            platform_version = ecs.FargatePlatformVersion("VERSION1_4"), #Required for EFS
+        )
+
         self.output_props = props.copy()
         self.output_props["vpc"] = vpc
         self.output_props["rds_instance"] = rds_instance
         self.output_props["EcsToRdsSeurityGroup"] = EcsToRdsSeurityGroup
         self.output_props["file_system"] = file_system
+        self.output_props["cluster"] = cluster
     
     @property
     def outputs(self):

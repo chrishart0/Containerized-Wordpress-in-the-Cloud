@@ -37,12 +37,6 @@ class WordpressEcsConstructStack(core.Stack):
                 )
             )
 
-        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Cluster.html?highlight=ecs%20cluster#aws_cdk.aws_ecs.Cluster
-        cluster = ecs.Cluster(self, "Cluster", 
-            vpc = props['vpc'], 
-            container_insights = props['ecs_enable_container_insights']
-        )
-
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Secret.html
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_secretsmanager/SecretStringGenerator.html
         dbtest = {
@@ -124,7 +118,7 @@ class WordpressEcsConstructStack(core.Stack):
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs_patterns/ApplicationLoadBalancedFargateService.html
         EcsService = ecs_patterns.ApplicationLoadBalancedFargateService(self, "EcsService",
-            cluster = cluster,
+            cluster = props["cluster"],
             desired_count = props['ecs_container_desired_count'],
             task_definition = WordpressTask,
             enable_ecs_managed_tags = True,

@@ -5,6 +5,7 @@ from aws_cdk import (
     aws_ec2 as ec2,
     aws_lambda as _lambda,
     aws_efs as efs,
+    aws_secretsmanager as secretsmanager,
     aws_ecs as ecs,
     aws_ecs_patterns as ecs_patterns
 )
@@ -111,8 +112,20 @@ class WordpressBaseConstructStack(core.Stack):
             container_insights = props['ecs_enable_container_insights']
         )
 
+        #######################
         ### Developer Tools ###
         # SFTP into the EFS Shared File System
+
+        NetToolsSecret=secretsmanager.Secret(self, "NetToolsSecret",
+            generate_secret_string=secretsmanager.SecretStringGenerator(
+                secret_string_template=json.dumps({
+                    "username":'sftp',
+                    "ip":''
+                }  ),
+                generate_string_key="password",
+                exclude_characters='/"'
+            )            
+        )
 
         #Networking tool optional deployment
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateTaskDefinition.html
@@ -121,8 +134,11 @@ class WordpressBaseConstructStack(core.Stack):
             memory_limit_mib = 512
         )
 
-        # #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateTaskDefinition.html#aws_cdk.aws_ecs.FargateTaskDefinition.add_container
-        NetToolsContainer = NetToolsTask.add_container("NetTools", image=ecs.ContainerImage.from_registry('netresearch/sftp'), essential=True )
+        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateTaskDefinition.html#aws_cdk.aws_ecs.FargateTaskDefinition.add_container
+        NetToolsContainer = NetToolsTask.add_container("NetTools", 
+            image=ecs.ContainerImage.from_registry('netresearch/sftp'),
+            command=['test:test:::efs']
+        )
         NetToolsContainer.add_port_mappings( ecs.PortMapping( container_port=22, protocol=ecs.Protocol.TCP) )
 
         #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateService.html?highlight=fargateservice#aws_cdk.aws_ecs.FargateService

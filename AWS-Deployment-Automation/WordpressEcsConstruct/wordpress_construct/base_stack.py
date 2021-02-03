@@ -99,6 +99,12 @@ class WordpressBaseConstructStack(core.Stack):
             enable_automatic_backups = props['efs_automatic_backups']
         )
 
+        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Cluster.html?highlight=ecs%20cluster#aws_cdk.aws_ecs.Cluster
+        cluster = ecs.Cluster(self, "Cluster", 
+            vpc = vpc, 
+            container_insights = props['ecs_enable_container_insights']
+        )
+
         if props['deploy_bastion_host']:
             #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ec2/BastionHostLinux.html
             bastion_host = ec2.BastionHostLinux(self, 'bastion_host',
@@ -106,47 +112,40 @@ class WordpressBaseConstructStack(core.Stack):
             )
             rds_instance.connections.allow_from(bastion_host, ec2.Port.tcp(3306))
 
-        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/Cluster.html?highlight=ecs%20cluster#aws_cdk.aws_ecs.Cluster
-        cluster = ecs.Cluster(self, "Cluster", 
-            vpc = vpc, 
-            container_insights = props['ecs_enable_container_insights']
-        )
+            #######################
+            ### Developer Tools ###
+            # SFTP into the EFS Shared File System
 
-        #######################
-        ### Developer Tools ###
-        # SFTP into the EFS Shared File System
+            NetToolsSecret=secretsmanager.Secret(self, "NetToolsSecret",
+                generate_secret_string=secretsmanager.SecretStringGenerator(
+                    secret_string_template=json.dumps({
+                        "username":'sftp',
+                        "ip":''
+                    }  ),
+                    generate_string_key="password",
+                    exclude_characters='/"'
+                )            
+            )
 
-        NetToolsSecret=secretsmanager.Secret(self, "NetToolsSecret",
-            generate_secret_string=secretsmanager.SecretStringGenerator(
-                secret_string_template=json.dumps({
-                    "username":'sftp',
-                    "ip":''
-                }  ),
-                generate_string_key="password",
-                exclude_characters='/"'
-            )            
-        )
+            #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateTaskDefinition.html
+            NetToolsTask = ecs.FargateTaskDefinition(self, "TaskDefinition",
+                cpu = 256,
+                memory_limit_mib = 512
+            )
 
-        #Networking tool optional deployment
-        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateTaskDefinition.html
-        NetToolsTask = ecs.FargateTaskDefinition(self, "TaskDefinition",
-            cpu = 256,
-            memory_limit_mib = 512
-        )
+            #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateTaskDefinition.html#aws_cdk.aws_ecs.FargateTaskDefinition.add_container
+            NetToolsContainer = NetToolsTask.add_container("NetTools", 
+                image=ecs.ContainerImage.from_registry('netresearch/sftp'),
+                command=['test:test:::efs']
+            )
+            NetToolsContainer.add_port_mappings( ecs.PortMapping( container_port=22, protocol=ecs.Protocol.TCP) )
 
-        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateTaskDefinition.html#aws_cdk.aws_ecs.FargateTaskDefinition.add_container
-        NetToolsContainer = NetToolsTask.add_container("NetTools", 
-            image=ecs.ContainerImage.from_registry('netresearch/sftp'),
-            command=['test:test:::efs']
-        )
-        NetToolsContainer.add_port_mappings( ecs.PortMapping( container_port=22, protocol=ecs.Protocol.TCP) )
-
-        #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateService.html?highlight=fargateservice#aws_cdk.aws_ecs.FargateService
-        service = ecs.FargateService(self, "Service",
-            cluster=cluster,
-            task_definition=NetToolsTask,
-            platform_version = ecs.FargatePlatformVersion("VERSION1_4"), #Required for EFS
-        )
+            #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateService.html?highlight=fargateservice#aws_cdk.aws_ecs.FargateService
+            service = ecs.FargateService(self, "Service",
+                cluster=cluster,
+                task_definition=NetToolsTask,
+                platform_version = ecs.FargatePlatformVersion("VERSION1_4"), #Required for EFS
+            )
 
         self.output_props = props.copy()
         self.output_props["vpc"] = vpc

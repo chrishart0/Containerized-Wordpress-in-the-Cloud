@@ -161,7 +161,7 @@ class WordpressBaseConstructStack(core.Stack):
             #https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ecs/FargateTaskDefinition.html#aws_cdk.aws_ecs.FargateTaskDefinition.add_container
             NetToolsContainer = NetToolsTask.add_container("NetTools", 
                 image=ecs.ContainerImage.from_registry('netresearch/sftp'),
-                command=['test:test:::efs']
+                command=['test:test:100:101:efs']
             )
             NetToolsContainer.add_port_mappings( ecs.PortMapping( container_port=22, protocol=ecs.Protocol.TCP) )
             

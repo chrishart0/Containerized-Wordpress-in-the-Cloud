@@ -8,7 +8,8 @@ from aws_cdk import (
     aws_secretsmanager as secretsmanager,
     aws_ecs as ecs,
     aws_ecs_patterns as ecs_patterns,
-    aws_iam as iam
+    aws_iam as iam,
+    aws_codedeploy as codedeploy
 )
 
 class WordpressBaseConstructStack(core.Stack):
@@ -195,6 +196,15 @@ class WordpressBaseConstructStack(core.Stack):
                     'CLUSTER_NAME': cluster.cluster_arn,
                     'SERVICE_NAME': service.service_name
                 }
+            )
+
+            alias = _lambda.Alias(self, "LambdaAlias", alias_name="Prod",
+                            version=bastion_ip_locator.current_version)
+      
+            codedeploy.LambdaDeploymentGroup(self, "DeploymentGroup",
+                alias=alias,
+                deployment_config=
+                    codedeploy.LambdaDeploymentConfig.LINEAR_10_PERCENT_EVERY_1_MINUTE
             )
 
             #Give needed perms to bastion_ip_locator for reading info from ECS

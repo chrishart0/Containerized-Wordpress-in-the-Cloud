@@ -58,4 +58,4 @@ jobs:
 
       - name: Push to ECR
         run:  docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/$CONTAINER_NAME:${{ steps.extract_branch.outputs.branch }}
-        
+         
